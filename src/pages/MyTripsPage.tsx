@@ -3,7 +3,8 @@ import { navigate } from '@/lib/router';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { formatINR, formatDate } from '@/lib/format';
-import type { Booking, Payment } from '@/types';
+import { LiveMapWeather } from '@/components/LiveMapWeather';
+import type { Booking, Payment, Destination } from '@/types';
 import {
   Calendar, MapPin, Users, Hotel, Car, CheckCircle2, CreditCard, Receipt,
   Plane, AlertCircle, Loader2, Download, ShieldAlert, Bell, Clock3, Siren, Check,
@@ -69,7 +70,21 @@ export function MyTripsPage() {
 
   useEffect(() => {
     (async () => {
-      if (!user) return;
+      const lb = sessionStorage.getItem('lastBooking');
+      if (lb) {
+        setLastBooking(JSON.parse(lb));
+        sessionStorage.removeItem('lastBooking');
+      }
+
+      const storedDemoBookings = JSON.parse(sessionStorage.getItem('demoBookings') || '[]');
+      if (!user) {
+        if (storedDemoBookings.length > 0) {
+          setBookings(storedDemoBookings);
+        }
+        setLoading(false);
+        return;
+      }
+
       const { data: bookingData, error } = await supabase
         .from('bookings')
         .select('*')
@@ -89,18 +104,57 @@ export function MyTripsPage() {
         })
       );
       setBookings(bookingsWithPayments);
-
-      const lb = sessionStorage.getItem('lastBooking');
-      if (lb) {
-        setLastBooking(JSON.parse(lb));
-        sessionStorage.removeItem('lastBooking');
-      }
       setLoading(false);
     })();
   }, [user]);
 
   const visibleBookings = bookings.length > 0 ? bookings : [demoActiveTrip];
   const notificationCount = useMemo(() => notifications.filter((n) => !n.isRead).length, [notifications]);
+
+  const liveTripDestinations = useMemo<Destination[]>(() => {
+    if (Array.isArray(lastBooking?.destinations) && lastBooking.destinations.length > 0) {
+      return lastBooking.destinations as Destination[];
+    }
+
+    try {
+      const rawTripForm = sessionStorage.getItem('currentTripForm');
+      if (rawTripForm) {
+        const parsed = JSON.parse(rawTripForm);
+        if (Array.isArray(parsed.destinations) && parsed.destinations.length > 0) {
+          return parsed.destinations as Destination[];
+        }
+      }
+    } catch {
+      // Ignore invalid session values and fall back to the route label below.
+    }
+
+    const primaryRoute = visibleBookings[0]?.trip_route || 'Destination';
+    const routeParts = primaryRoute.split('→').map((part) => part.trim()).filter(Boolean);
+
+    if (routeParts.length === 0) {
+      return [{
+        name: 'Destination',
+        city: 'Destination',
+        state: '',
+        country: 'India',
+        country_code: 'IN',
+        latitude: null,
+        longitude: null,
+        place_id: 'trip-demo-destination',
+      }];
+    }
+
+    return routeParts.map((part, index) => ({
+      name: part,
+      city: part,
+      state: '',
+      country: 'India',
+      country_code: 'IN',
+      latitude: null,
+      longitude: null,
+      place_id: `trip-route-${index}-${part.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+    }));
+  }, [lastBooking, visibleBookings]);
 
   const openHelp = (booking: Booking & { payment?: Payment }) => {
     setSelectedBooking(booking);
@@ -236,6 +290,16 @@ export function MyTripsPage() {
           <span className="font-semibold">Latest update:</span> {lastNotification}
         </div>
       )}
+
+      <div className="mb-8">        <div className="mb-3 flex justify-end">
+          <button
+            onClick={() => navigate('/map-weather')}
+            className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+          >
+            Map & Weather
+          </button>
+        </div>        <LiveMapWeather destinations={liveTripDestinations} showUserLocation title="Map & Weather" />
+      </div>
 
       {bookings.length === 0 ? (
         <div className="mb-6 rounded-2xl border border-dashed border-primary-200 bg-primary-50 p-6 text-center">

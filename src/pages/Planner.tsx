@@ -3,6 +3,7 @@ import { navigate } from '@/lib/router';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { searchDestinations, reverseGeocode, detectCurrentLocation, generatePlans } from '@/lib/api';
+import { LiveMapWeather } from '@/components/LiveMapWeather';
 import type { Destination, TripFormData, Plan } from '@/types';
 import {
   MapPin, Navigation, Search, Plus, X, Loader2, ChevronLeft, ChevronRight,
@@ -57,6 +58,8 @@ export function Planner() {
   const { user } = useAuth();
   const [form, setForm] = useState<TripFormData>(emptyForm);
   const [loading, setLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationStatus, setLocationStatus] = useState('');
   const [error, setError] = useState('');
   const [autoDestination, setAutoDestination] = useState(false);
   const [startQuery, setStartQuery] = useState('');
@@ -120,17 +123,35 @@ export function Planner() {
 
   const handleDetectLocation = async () => {
     setError('');
+    setLocationStatus('');
+    setLocationLoading(true);
+    setManualLocation(false);
     try {
       const { lat, lng } = await detectCurrentLocation();
       const location = await reverseGeocode(lat, lng);
       if (location) {
         updateForm({ startLocation: location });
+        setLocationStatus('Current location detected.');
       } else {
-        setManualLocation(true);
+        updateForm({
+          startLocation: {
+            name: 'Current location',
+            city: `GPS ${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+            state: '',
+            country: '',
+            country_code: '',
+            latitude: lat,
+            longitude: lng,
+            place_id: `gps-${lat.toFixed(5)}-${lng.toFixed(5)}`,
+          },
+        });
+        setLocationStatus('Address lookup unavailable; using your GPS coordinates.');
       }
     } catch (err: any) {
-      setError(err.message || 'Could not determine your location.');
+      setLocationStatus(err.message || 'Could not determine your location.');
       setManualLocation(true);
+    } finally {
+      setLocationLoading(false);
     }
   };
 
@@ -311,9 +332,11 @@ export function Planner() {
 
             <div className="mt-5">
               <label className="mb-2 block text-sm font-semibold text-gray-700">Starting City / Current Location</label>
-              <button onClick={handleDetectLocation} className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 font-semibold text-white shadow-lg transition hover:bg-primary-700">
-                <Navigation className="h-4 w-4" /> 📍 Use My Current Location
+              <button onClick={handleDetectLocation} disabled={locationLoading} className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 font-semibold text-white shadow-lg transition hover:bg-primary-700 disabled:cursor-wait disabled:opacity-70">
+                {locationLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
+                {locationLoading ? 'Detecting location...' : 'Use My Current Location'}
               </button>
+              {locationStatus && <p role="status" className="mb-3 text-sm text-gray-600">{locationStatus}</p>}
 
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -331,7 +354,7 @@ export function Planner() {
                   {startResults.map((dest, idx) => (
                     <button key={idx} onClick={() => { updateForm({ startLocation: dest }); setStartQuery(''); setStartResults([]); }} className="w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-left text-sm hover:border-primary-300 hover:bg-primary-50">
                       <p className="font-semibold text-gray-900">{dest.name}</p>
-                      <p className="text-gray-500">{dest.city}, {dest.country}</p>
+                      <p className="text-gray-500">{dest.city}{dest.state ? `, ${dest.state}` : ''}, {dest.country}</p>
                     </button>
                   ))}
                 </div>
@@ -339,7 +362,7 @@ export function Planner() {
 
               {manualLocation && (
                 <div className="mt-4 rounded-xl border border-warning-200 bg-warning-50 p-4">
-                  <p className="mb-2 text-sm text-warning-800">Location permission was denied. Enter city manually:</p>
+                  <p className="mb-2 text-sm text-warning-800">Location is unavailable. Enter your starting city manually:</p>
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <input value={manualCity} onChange={(e) => setManualCity(e.target.value)} className="input-field" placeholder="Enter city name" />
                     <button onClick={handleManualLocationSubmit} className="btn-primary">Set</button>
@@ -374,10 +397,13 @@ export function Planner() {
                   {destinationResults.map((dest, idx) => (
                     <button key={idx} onClick={() => handleAddDestination(dest)} className="w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-left text-sm hover:border-primary-300 hover:bg-primary-50">
                       <p className="font-semibold text-gray-900">{dest.name}</p>
-                      <p className="text-gray-500">{dest.city}, {dest.country}</p>
+                      <p className="text-gray-500">{dest.city}{dest.state ? `, ${dest.state}` : ''}, {dest.country}</p>
                     </button>
                   ))}
                 </div>
+              )}
+              {destinationQuery.trim().length >= 2 && !destinationSearching && destinationResults.length === 0 && (
+                <p className="text-sm text-gray-500">No matching places found. Try a city, state, or country name.</p>
               )}
 
               <div className="flex flex-wrap gap-2 text-sm">
@@ -423,6 +449,12 @@ export function Planner() {
                       </button>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {form.destinations.length > 0 && (
+                <div className="mt-4">
+                  <LiveMapWeather destinations={form.destinations} title="Map & Weather" />
                 </div>
               )}
             </div>

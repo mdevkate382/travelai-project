@@ -34,7 +34,7 @@ export function PlansPage() {
 
         // Save plans to database and keep their generated IDs for booking
         for (const plan of generatedPlans) {
-          const { data } = await supabase.from('plans').insert({
+          const { data, error: planError } = await supabase.from('plans').insert({
             trip_id: storedTripId,
             user_id: user?.id,
             plan_name: plan.planName,
@@ -59,28 +59,30 @@ export function PlansPage() {
             why_matches: plan.whyMatches,
           }).select('id').single();
 
-          const savedPlan = data ? { ...plan, id: data.id } : plan;
+          if (planError) throw new Error(planError.message);
+          if (!data?.id) throw new Error('Could not save the generated plan. Please try again.');
+
+          const savedPlan = { ...plan, id: data.id };
           savedPlans.push(savedPlan);
 
-          if (data) {
-            for (const day of plan.itinerary) {
-              await supabase.from('itinerary_days').insert({
-                plan_id: data.id,
-                user_id: user?.id,
-                day_number: day.dayNumber,
-                day_title: day.dayTitle,
-                location: day.location,
-                morning: day.morning,
-                afternoon: day.afternoon,
-                evening: day.evening,
-                food: day.food,
-                transport: day.transport,
-                hotel: day.hotel,
-                activities: day.activities,
-                daily_cost: day.dailyCost,
-                travel_tips: day.travelTips,
-              });
-            }
+          for (const day of plan.itinerary) {
+            const { error: itineraryError } = await supabase.from('itinerary_days').insert({
+              plan_id: data.id,
+              user_id: user?.id,
+              day_number: day.dayNumber,
+              day_title: day.dayTitle,
+              location: day.location,
+              morning: day.morning,
+              afternoon: day.afternoon,
+              evening: day.evening,
+              food: day.food,
+              transport: day.transport,
+              hotel: day.hotel,
+              activities: day.activities,
+              daily_cost: day.dailyCost,
+              travel_tips: day.travelTips,
+            });
+            if (itineraryError) throw new Error(itineraryError.message);
           }
         }
 

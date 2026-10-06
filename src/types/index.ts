@@ -84,6 +84,7 @@ export interface DayPlanDetail {
   dayNumber: number;
   dayTitle: string;
   summary: string;
+  location?: string;
   startPoint: string;
   recommendedTransport: string;
   departureInfo: string;
@@ -103,6 +104,7 @@ export interface DayPlanDetail {
   estimatedExpenses: { food: number; localTravel: number; activities: number; total: number };
   eveningActivity: string;
   overnightStay: string;
+  travelTips?: string;
   detailedSchedule: string[];
 }
 
@@ -220,6 +222,7 @@ export interface Payment {
   payment_status: string;
   payment_mode: string;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface Review {

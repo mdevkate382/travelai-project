@@ -67,6 +67,7 @@ export function PlanDetails() {
     dayNumber: day.dayNumber,
     dayTitle: day.dayTitle,
     summary: day.morning,
+    location: day.location,
     startPoint: formData.startLocation?.city || 'Your city',
     recommendedTransport: day.transport,
     departureInfo: 'Departure as per travel schedule',
@@ -86,6 +87,7 @@ export function PlanDetails() {
     estimatedExpenses: { food: day.dailyCost * 0.2, localTravel: day.dailyCost * 0.15, activities: day.dailyCost * 0.35, total: day.dailyCost },
     eveningActivity: day.evening,
     overnightStay: day.hotel,
+    travelTips: day.travelTips,
     detailedSchedule: [day.morning, day.afternoon, day.evening],
   }));
 
@@ -302,9 +304,19 @@ export function PlanDetails() {
             <button
               onClick={() => {
                 sessionStorage.setItem('selectedPlan', JSON.stringify(plan));
+                navigate('/map-weather');
+              }}
+              className="mt-4 w-full rounded-xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white hover:bg-primary-700"
+            >
+              <Map className="h-4 w-4" /> Map & Weather
+            </button>
+
+            <button
+              onClick={() => {
+                sessionStorage.setItem('selectedPlan', JSON.stringify(plan));
                 navigate('/booking');
               }}
-              className="mt-4 w-full btn-primary text-sm"
+              className="mt-3 w-full btn-primary text-sm"
             >
               <CheckCircle2 className="h-4 w-4" /> Select Plan
             </button>
@@ -340,14 +352,17 @@ export function PlanDetails() {
           </div>
 
           <div className="card p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Booking Options</h2>
-            <div className="space-y-3">
-              <button className="w-full btn-primary"><Hotel className="h-4 w-4" /> Book Hotel</button>
-              <button className="w-full btn-secondary"><Plane className="h-4 w-4" /> Book Flight</button>
-              <button className="w-full btn-secondary"><Train className="h-4 w-4" /> Book Train</button>
-              <button className="w-full btn-secondary"><Map className="h-4 w-4" /> Book Local Transport</button>
-            </div>
-            <p className="mt-3 text-xs text-gray-500">Estimated availability and price details are shown as estimates unless a live booking service is connected.</p>
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Book Your Trip</h2>
+            <button
+              onClick={() => {
+                sessionStorage.setItem('selectedPlan', JSON.stringify(plan));
+                navigate('/booking');
+              }}
+              className="w-full btn-primary"
+            >
+              <CheckCircle2 className="h-4 w-4" /> Book My Trip
+            </button>
+            <p className="mt-3 text-xs text-gray-500">This trip booking includes your selected travel plan, itinerary, dates, and payment confirmation.</p>
           </div>
         </aside>
       </div>

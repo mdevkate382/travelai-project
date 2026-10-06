@@ -10,6 +10,7 @@ import { PlansPage } from '@/pages/PlansPage';
 import { PlanDetails } from '@/pages/PlanDetails';
 import { ComparePage } from '@/pages/ComparePage';
 import { BookingPage } from '@/pages/BookingPage';
+import { PaymentPage } from '@/pages/PaymentPage';
 import { MyTripsPage } from '@/pages/MyTripsPage';
 import { DestinationsPage } from '@/pages/DestinationsPage';
 import { MemoriesPage } from '@/pages/MemoriesPage';
@@ -21,6 +22,8 @@ import { ContactPage } from '@/pages/ContactPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { TravelCommunityPage } from '@/pages/TravelCommunityPage';
 import { SubscriptionPage } from '@/pages/SubscriptionPage';
+import { MapWeatherPage } from '@/pages/MapWeatherPage';
+import { WeatherPage } from '@/pages/WeatherPage';
 import { ChatbotWidget } from '@/components/ChatbotWidget';
 import { Navbar, Footer } from '@/components/Layout';
 import { Loader2 } from 'lucide-react';
@@ -48,6 +51,8 @@ function AppRoutes() {
   // Auth pages (no shell)
   if (path === '/login') return <LoginPage />;
   if (path === '/signup') return <SignupPage />;
+  if (path === '/map-weather') return <MapWeatherPage />;
+  if (path === '/weather') return <WeatherPage />;
 
   // Protected pages (with shell + chatbot)
   return (
@@ -69,6 +74,7 @@ function renderPage(path: string, params: Record<string, string>): React.ReactNo
     case '/plan-details': return <PlanDetails />;
     case '/compare': return <ComparePage />;
     case '/booking': return <BookingPage />;
+    case '/payment': return <PaymentPage />;
     case '/my-trips': return <MyTripsPage />;
     case '/destinations': return <DestinationsPage />;
     case '/memories': return <MemoriesPage />;

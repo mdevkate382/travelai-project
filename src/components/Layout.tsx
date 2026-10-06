@@ -15,8 +15,8 @@ export function Navbar() {
     { label: 'Subscription', to: '/subscription' },
     { label: 'Explore Reels', to: '/explore-reels' },
     { label: 'My Trips', to: '/my-trips' },
-    { label: 'Maps', to: '/compare' },
-    { label: 'Weather', to: '/about' },
+    { label: 'Map', to: '/map-weather' },
+    { label: 'Weather', to: '/weather' },
   ];
 
   return (
